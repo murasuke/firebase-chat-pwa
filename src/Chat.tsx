@@ -1,6 +1,8 @@
-import React, {useState, useMemo, useEffect} from 'react';
+import React, {useState, useEffect, useMemo, useRef} from 'react';
 import db from './firebaseConfig';
 import './Chat.css';
+import { logger } from 'workbox-core/_private';
+
 
 type ChatLog = {
   key: string,
@@ -42,8 +44,29 @@ const Chat1: React.FC = () => {
   const [msg, setMsg] = useState('');
   const userName = useMemo(() => getUName(), []);
   const messagesRef = useMemo(() => db.collection("chatroom").doc("room1").collection("messages"), []);
+  const recognition = useMemo<any>(() => new ((window as any).webkitSpeechRecognition)(), []);
+  const [listening, setListening] = useState(false);
+  const inputMsg = useRef(null); 
 
   useEffect( () => {
+    recognition.lang = 'ja-JP';
+    recognition.onresult  = (e: any) => {
+      if(e.results[0][0].transcript){
+        recognition.stop();
+        setListening(false);
+        setMsg(e.results[0][0].transcript);
+        inputMsg.current.focus();
+        setTimeout(() => submitMsg(), 100);
+      }
+      console.log(e.results[0][0].transcript);
+    };
+
+    recognition.onend  = (e: any) => {
+      recognition.stop();
+      setListening(false);
+    };
+
+
     // 同期処理イベント（最新10件をとるためdateでソート)
     messagesRef.orderBy("date", "desc").limit(10).onSnapshot((snapshot) => {
       snapshot.docChanges().forEach((change) => {
@@ -68,6 +91,16 @@ const Chat1: React.FC = () => {
     };
     // Firestoreから取得したデータは時間降順のため、表示前に昇順に並び替える
     setChatLogs((prev) => [...prev, log,].sort((a,b) => a.date.valueOf() - b.date.valueOf()));
+  }
+
+  const toggleListen = () => {
+    if (listening) {
+      setListening(false);
+      recognition.stop();
+    } else {
+      setListening(true);
+      recognition.start();
+    }
   }
 
   /**
@@ -105,11 +138,13 @@ const Chat1: React.FC = () => {
         ))}
       </div>
       
-      {/* メッセージ入力 */}
-      <form className='chatform' onSubmit={e => { submitMsg();e.preventDefault() }}>
-        <div>{userName}</div>       
-          <input type="text" value={msg} onChange={(e) => setMsg(e.target.value)} />
-          <input type='image' onClick={submitMsg} src='./img/airplane.png' alt='' />       
+      {/* メッセージ入力 */}           
+      <form className='chatform' onSubmit={e => { e.preventDefault();submitMsg(); }}>
+        <div>{userName}</div>
+          <input type="text" value={msg} ref={inputMsg} onChange={(e) => setMsg(e.target.value)} />
+          <input type='image' onClick={submitMsg} src='./img/airplane.png' alt='' />
+          <input type='image' onClick={toggleListen} style={{width: '36px', height: '36px'}}
+            src={listening? './img/mic-listening.png': './img/mic-stop.png'} alt='' /> 
       </form>
     </>
   );
