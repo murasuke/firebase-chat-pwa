@@ -1,7 +1,6 @@
 import React, {useState, useEffect, useMemo, useRef} from 'react';
 import db from './firebaseConfig';
 import './Chat.css';
-import { logger } from 'workbox-core/_private';
 
 
 type ChatLog = {
@@ -39,7 +38,7 @@ const getStrTime = (time: Date) => {
 /**
  * チャットコンポーネント(Line風)
  */
-const Chat1: React.FC = () => {
+const Chat: React.FC = () => {
   const [chatLogs, setChatLogs] = useState<ChatLog[]>([]);
   const [msg, setMsg] = useState('');
   const userName = useMemo(() => getUName(), []);
@@ -50,19 +49,21 @@ const Chat1: React.FC = () => {
 
   useEffect( () => {
     recognition.lang = 'ja-JP';
+
+    // 音声認識時イベント。認識したメッセージを送信する。
     recognition.onresult  = (e: any) => {
-      if(e.results[0][0].transcript){
+      const transcript = e.results[0][0].transcript;
+      if (transcript) {
         recognition.stop();
-        setListening(false);
-        setMsg(e.results[0][0].transcript);
+        setMsg(transcript);
         inputMsg.current.focus();
-        setTimeout(() => submitMsg(), 100);
+        submitMsg(transcript)
       }
-      console.log(e.results[0][0].transcript);
+      console.log(transcript);
     };
 
+    // 音声人認識終了時(もしくは一定時間無音状態)、マイクアイコンを元に戻す
     recognition.onend  = (e: any) => {
-      recognition.stop();
       setListening(false);
     };
 
@@ -93,12 +94,14 @@ const Chat1: React.FC = () => {
     setChatLogs((prev) => [...prev, log,].sort((a,b) => a.date.valueOf() - b.date.valueOf()));
   }
 
+  /**
+   * 音声認識機能の有効化／無効化(toggle)
+   */
   const toggleListen = () => {
+    setListening(!listening);
     if (listening) {
-      setListening(false);
       recognition.stop();
     } else {
-      setListening(true);
       recognition.start();
     }
   }
@@ -106,14 +109,15 @@ const Chat1: React.FC = () => {
   /**
    * メッセージ送信
    */
-  const submitMsg = async () => {
-    if (msg.length === 0) {
+  const submitMsg = async (argMsg?: string) => {
+    const message = argMsg || msg;
+    if (message.length === 0) {
       return;
     }
 
     messagesRef.add({
       name: userName,
-      msg: msg,
+      msg: message,
       date: new Date().getTime(),
     });
 
@@ -142,7 +146,7 @@ const Chat1: React.FC = () => {
       <form className='chatform' onSubmit={e => { e.preventDefault();submitMsg(); }}>
         <div>{userName}</div>
           <input type="text" value={msg} ref={inputMsg} onChange={(e) => setMsg(e.target.value)} />
-          <input type='image' onClick={submitMsg} src='./img/airplane.png' alt='' />
+          <input type='image' onClick={() => submitMsg} src='./img/airplane.png' alt='' />
           <input type='image' onClick={toggleListen} style={{width: '36px', height: '36px'}}
             src={listening? './img/mic-listening.png': './img/mic-stop.png'} alt='' /> 
       </form>
@@ -150,4 +154,4 @@ const Chat1: React.FC = () => {
   );
 };
 
-export default Chat1;
+export default Chat;
