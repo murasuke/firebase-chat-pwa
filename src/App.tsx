@@ -1,11 +1,10 @@
+import React, { FC } from 'react';
 import Chat from './Chat';
 
-function App() {
-  return (
-    <div className="App">
-      <Chat />
-    </div>
-  );
-}
+const App: FC = () => (
+  <div className="App">
+    <Chat />
+  </div>
+);
 
 export default App;
