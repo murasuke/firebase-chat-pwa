@@ -2,20 +2,20 @@
 
 ## 概要
 1. javascript(typescript)でPWAとして実装(React)。「サーバロジックは無し(クライアント側でDB登録、同期処理を実装)」
-	
+
 1. Line風の見た目で、複数人の投稿がリアルタイムに同期されます
-	
+
 1. 初回アクセス時に名前を入力すれば投稿できます
-	
+
 1. DBには「Firestore」、サーバは「Firebase Hosting」を利用しています。  (10人程度で利用する分には、無料枠で賄えます)
-	
+
 1. 音声入力も作りこみました(SpeechRecognition APIを実装しているChrome,Safariなどで利用可能)  　　https://developer.mozilla.org/ja/docs/Web/API/SpeechRecognition
-	
+
 1. ソースはcss除いて150行ほどです(動作確認のため最低限)
-	
+
 ## 利用モジュール
 
-create-react-app ＋ firebase のSDKのみです。
+create-react-app ＋ firebase を利用(下記以外に、LinterとPrettierを追加しています)
 
 ```json
   "dependencies": {
@@ -46,7 +46,7 @@ Firebaseプロジェクトの作成方法は下記の外部ページでご確認
 `.env`ファイルで設定します。
 
 設定する内容はfirebaseのコンソールから確認します。
-  
+
   ![firebase-console](./img/firebase_config.png)
 
 * .env
@@ -105,7 +105,7 @@ type ChatLog = {
 ```typescript
 <>
   {/* チャットログ */}
-  <div>      
+  <div>
     {chatLogs.map((item, i) => (
       <div className={userName===item.name? 'balloon_r': 'balloon_l'} key={item.key}>
         {userName===item.name? getStrTime(item.date): '' }
@@ -119,14 +119,14 @@ type ChatLog = {
       </div>
     ))}
   </div>
-  
+
   {/* メッセージ入力 */}
   <form className='chatform' onSubmit={e => { e.preventDefault();submitMsg(); }}>
     <div>{userName}</div>
       <input type="text" value={msg} ref={inputMsg} onChange={(e) => setMsg(e.target.value)} />
       <input type='image' onClick={() => submitMsg} src='./img/airplane.png' alt='' />
       <input type='image' onClick={toggleListen} style={{width: '36px', height: '36px'}}
-        src={listening? './img/mic-listening.png': './img/mic-stop.png'} alt='' /> 
+        src={listening? './img/mic-listening.png': './img/mic-stop.png'} alt='' />
   </form>
 </>
 ```

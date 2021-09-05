@@ -22,6 +22,7 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
+    "deploy": "npm run -s build && firebase deploy",
     "fix": "npm run -s format && npm run -s lint:fix",
     "format": "prettier --write --loglevel=warn \"src/**/*.{js,jsx,ts,tsx,gql,graphql,json}\"",
     "lint": "npm run -s lint:style && npm run -s lint:es",
