@@ -11,7 +11,7 @@
 
 1. 音声入力(SpeechRecognition APIを実装しているChrome,Safariなどで利用可能)  　　https://developer.mozilla.org/ja/docs/Web/API/SpeechRecognition
 
-1. 名前表示用のアイコンをcanvasで動的に画像を作成しています。非同期関数となるため<Suspense>を利用しています
+1. 名前表示用のアイコンをcanvasで動的に画像を作成しています。非同期関数となるため`Suspense`を利用しています
 
 1. ソースはcss除いて200行ほどです(動作確認のため最低限)
 
@@ -114,7 +114,7 @@ type ChatLog = {
       <div className={userName===item.name? 'balloon_r': 'balloon_l'} key={item.key}>
         {userName===item.name? getStrTime(item.date): '' }
         <div className="faceicon">
-          <img src={userName===item.name? './img/cat.png': './img/dog.png'} alt="" />
+          <NameIcon userName={item.name} />
         </div>
         <div style={{marginLeft: '3px'}}>
           {item.name}<p className="says">{item.msg}</p>
