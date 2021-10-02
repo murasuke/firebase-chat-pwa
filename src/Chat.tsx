@@ -3,7 +3,9 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useParams } from 'react-router-dom';
 import db from './firebaseConfig';
+import NameIcon from './NameIcon';
 import './Chat.css';
 
 type ChatLog = {
@@ -49,10 +51,11 @@ const getStrTime = (time: Date) => {
 const Chat: React.FC = () => {
   const [chatLogs, setChatLogs] = useState<ChatLog[]>([]);
   const [msg, setMsg] = useState('');
+  const { room } = useParams<{ room: string }>();
   const userName = useMemo(() => getUName(), []);
   const messagesRef = useMemo(
-    () => db.collection('chatroom').doc('room1').collection('messages'),
-    [],
+    () => db.collection('chatroom').doc(room).collection('messages'),
+    [room],
   );
   const recognition = useMemo<any>(
     // eslint-disable-next-line new-cap
@@ -159,10 +162,7 @@ const Chat: React.FC = () => {
           >
             {userName === item.name ? getStrTime(item.date) : ''}
             <div className="faceicon">
-              <img
-                src={userName === item.name ? './img/cat.png' : './img/dog.png'}
-                alt=""
-              />
+              <NameIcon userName={item.name} />
             </div>
             <div style={{ marginLeft: '3px' }}>
               {item.name}
@@ -198,7 +198,7 @@ const Chat: React.FC = () => {
           type="image"
           onClick={toggleListen}
           style={{ width: '36px', height: '36px' }}
-          src={listening ? './img/mic-listening.png' : './img/mic-stop.png'}
+          src={listening ? '../img/mic-listening.png' : '../img/mic-stop.png'}
           alt=""
         />
       </form>

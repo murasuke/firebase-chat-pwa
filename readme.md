@@ -1,15 +1,17 @@
 # Line風PWAチャットアプリ(React + Firestore)
 
 ## 概要
-1. javascript(typescript)でPWAとして実装(React)。「サーバロジックは無し(クライアント側でDB登録、同期処理を実装)」
+1. TypeScriptでPWAとして実装(React)。「サーバロジックは無し(クライアント側でDB登録、同期処理を実装)」
 
 1. Line風の見た目で、複数人の投稿がリアルタイムに同期されます
 
-1. 初回アクセス時に名前を入力すれば投稿できます
+1. 初回アクセス時に名前を入力すれば投稿できます。名前はlocalStorageに保存します
 
 1. DBには「Firestore」、サーバは「Firebase Hosting」を利用しています。  (10人程度で利用する分には、無料枠で賄えます)
 
-1. 音声入力も作りこみました(SpeechRecognition APIを実装しているChrome,Safariなどで利用可能)  　　https://developer.mozilla.org/ja/docs/Web/API/SpeechRecognition
+1. 音声入力(SpeechRecognition APIを実装しているChrome,Safariなどで利用可能)  　　https://developer.mozilla.org/ja/docs/Web/API/SpeechRecognition
+
+1. 名前表示用のアイコンをcanvasで動的に画像を作成しています。非同期関数となるため<Suspense>を利用しています
 
 1. ソースはcss除いて150行ほどです(動作確認のため最低限)
 
@@ -131,32 +133,6 @@ type ChatLog = {
 </>
 ```
 
-### 音声認識
-
-音声認識のため`webkitSpeechRecognition`を利用しています。
-画面下部の「マイク」をクリックすると音声認識を開始し、認識後自動で投稿します。
-
-無音状態が数秒続くと認識を停止します。
-
-```typescript
-  const recognition = useMemo<any>(() => new ((window as any).webkitSpeechRecognition)(), []);
-
-  useEffect( () => {
-    recognition.lang = 'ja-JP';
-
-    // 音声認識時イベント。認識したメッセージを送信する。
-    recognition.onresult  = (e: any) => {
-      const transcript = e.results[0][0].transcript;
-      if (transcript) {
-        recognition.stop();
-        setMsg(transcript);
-        inputMsg.current.focus();
-        submitMsg(transcript)
-      }
-      console.log(transcript);
-    };
-```
-
 ### データ同期処理
 
 簡略化のため保存するテーブル名(collection)は固定です。
@@ -201,3 +177,89 @@ type ChatLog = {
     setChatLogs((prev) => [...prev, log,].sort((a,b) => a.date.valueOf() - b.date.valueOf()));
   }
 ```
+
+
+### 音声認識
+
+音声認識のため`webkitSpeechRecognition`を利用しています。
+画面下部の「マイク」をクリックすると音声認識を開始し、認識後自動で投稿します。
+
+無音状態が数秒続くと認識を停止します。
+
+```typescript
+  const recognition = useMemo<any>(() => new ((window as any).webkitSpeechRecognition)(), []);
+
+  useEffect( () => {
+    recognition.lang = 'ja-JP';
+
+    // 音声認識時イベント。認識したメッセージを送信する。
+    recognition.onresult  = (e: any) => {
+      const transcript = e.results[0][0].transcript;
+      if (transcript) {
+        recognition.stop();
+        setMsg(transcript);
+        inputMsg.current.focus();
+        submitMsg(transcript)
+      }
+      console.log(transcript);
+    };
+```
+
+
+### OffscreenCanvasで描画した画像を表示
+
+  OffscreenCanvasで画像化する場合、async関数となるため表示が面倒になります。このような場合、React.Suspenseを使うとすっきりとしたコードにすることができます。
+
+* Canvasの場合
+
+  非同期処理が不要なため<img>のsrcに直接埋め込むことができます
+
+```typescript
+const createImage = () => {
+  // 描画部分は省略
+  var imageUrl = canvas.toDataURL( "image/jpeg", 0.75 ) ;
+  return imageUrl;
+}
+
+const ImageTag: VFC = () => {
+   return <img alt="icon" src={createImage()} />;
+};
+```
+
+* OffscreenCanvasの場合
+
+  非同期処理となるためuseEffect()を利用した副作用で処理する必要がありますが、Suspenseを利用すると、すっきりとしたコードにすることができます。
+
+
+```typescript
+const createImage = () => {
+  // 描画部分は省略
+  const blob = await canvas.convertToBlob();
+  const imageUrl = URL.createObjectURL(blob);
+  return imageUrl;
+}
+
+// Suspenceで利用するため非同期関数をラップする
+// Promiseをthrowし、非同期処理完了後に必要な値を返す処理にする
+// Suspence側ではPromiseをcatchし、非同期処理完了後に本来表示するタグに置き換える
+const iconImage: string = undefined;
+const IconMaker: VFC = () => {
+  const createImageWrapper = () => {
+    if (!iconImage) {
+      throw createImage().then((r) => (iconImage = r));
+    } else {
+      return iconImage;
+    }
+  };
+
+  return <img alt="icon" src={createImageWrapper()} />;
+};
+
+const NameIcon: VFC<{ userName: string }> = ({ userName }) => (
+  <Suspense fallback={<p>Loading...</p>}>
+    <IconMaker />
+  </Suspense>
+);
+```
+
+
